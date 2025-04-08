@@ -1,0 +1,25 @@
+net = feedforwardnet(20);
+
+net.trainFcn = 'trainscg'; 
+opts = net.trainParam;   
+opts.epochs = 200;
+opts.goal = 1e-5;   
+opts.lr = 0.005;   
+opts.max_fail = 20;    
+opts.plotFcns = @plottrainingprogress;
+opts.regulizers = 0.001;  
+net.divideParam.trainRatio = 0.7;
+net.divideParam.valRatio = 0.1; 
+net.divideParam.testRatio = 0.2;
+
+[trained_net, tr] = train(net, input_data, target_data);
+
+test_output = trained_net(test_data);
+
+data(:, 11) = NaN(size(data, 1), 1);
+data(l+1:end, 11) = test_output; 
+
+save("updated.mat", "data");
+
+rmse = sqrt(mean((test_real - test_output).^2));
+[corr_matrix, p_value] = corrcoef(test_real, test_output);
