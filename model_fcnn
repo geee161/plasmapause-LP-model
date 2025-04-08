@@ -1,0 +1,48 @@
+inputLayer = sequenceInputLayer(5, 'Name', 'input');
+fc1 = fullyConnectedLayer(16, 'Name', 'fc');
+relu1 = reluLayer('Name', 'relu');
+fc2 = fullyConnectedLayer(10, 'Name', 'fc_1');
+relu2 = reluLayer('Name', 'relu_1');
+fc3 = fullyConnectedLayer(1, 'Name', 'fc_2');
+outputLayer = regressionLayer('Name', 'output');
+
+layers = [inputLayer, fc1, relu1, fc2, relu2, fc3, outputLayer];
+options = trainingOptions('adam', ...
+    'MiniBatchSize', 50, ...
+    'MaxEpochs', 150, ...
+    'InitialLearnRate', 5e-3, ...
+    'LearnRateSchedule', 'piecewise', ...
+    'LearnRateDropFactor', 0.1, ...
+    'LearnRateDropPeriod', 100, ...
+    'Shuffle', 'every-epoch', ...
+    'Plots', 'training-progress', ...
+    'Verbose', false, ...
+    'ValidationData', {p_test, t_test}, ... 
+    'ValidationFrequency', 20, ... 
+    'ValidationPatience', 30); 
+
+% 划分训练集和测试集
+n = floor(size(data, 1) * 0.9);
+P_train = data(1: n, 2:6)';
+T_train = data(1: n, 1)';
+M = size(P_train, 2);
+
+P_test = data(n+1: end, 2:6)';
+T_test = data(n+1: end, 1)';
+N = size(P_test, 2);
+
+% 数据归一化
+[p_train, ps_input] = mapminmax(P_train, 0, 1);
+p_test = mapminmax('apply', P_test, ps_input);
+
+[t_train, ps_output] = mapminmax(T_train, 0, 1);
+t_test = mapminmax('apply', T_test, ps_output);
+
+net = trainNetwork(p_train, t_train, layers, options);
+
+t_sim1 = predict(net, p_train);
+t_sim2 = predict(net, p_test);
+
+T_sim1 = mapminmax('reverse', t_sim1, ps_output);
+T_sim2 = mapminmax('reverse', t_sim2, ps_output);
+
